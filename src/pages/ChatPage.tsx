@@ -52,6 +52,29 @@ export default function ChatPage() {
     });
   };
 
+  const handleExport = () => {
+    if (!currentRole || messages.length === 0) return;
+
+    const lines = messages.map((m) => {
+      const sender = m.role === "user" ? t("chat.send") === "Send" ? "Me" : "我" : currentRole.name;
+      const time = m.createdAt?.toDate?.()
+        ? m.createdAt.toDate().toLocaleString()
+        : "";
+      return `[${sender}] ${time}\n${m.content}`;
+    });
+
+    const header = `${currentRole.name} - ${t("chat.export")}\n${"=".repeat(40)}\n\n`;
+    const text = header + lines.join("\n\n");
+
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${currentRole.name}_chat.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (rolesLoading || chatLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -90,12 +113,21 @@ export default function ChatPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleClearHistory}
-            className="text-xs text-gray-400 hover:text-red-500 transition"
-          >
-            {t("chat.clear")}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExport}
+              disabled={messages.length === 0}
+              className="text-xs text-gray-400 hover:text-blue-500 disabled:opacity-30 transition"
+            >
+              {t("chat.export")}
+            </button>
+            <button
+              onClick={handleClearHistory}
+              className="text-xs text-gray-400 hover:text-red-500 transition"
+            >
+              {t("chat.clear")}
+            </button>
+          </div>
         </div>
 
         {/* Messages */}

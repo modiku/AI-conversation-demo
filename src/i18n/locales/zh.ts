@@ -76,6 +76,7 @@ const zh = {
   "chat.sidebar.title": "角色列表",
   "chat.notFound": "角色不存在或已被删除",
   "chat.aiError": "抱歉，AI 响应失败，请稍后重试。",
+  "chat.export": "导出记录",
 
   // Onboarding
   "onboarding.title": "创建你的第一个 AI 角色",

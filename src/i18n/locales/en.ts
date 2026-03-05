@@ -78,6 +78,7 @@ const en: Record<TranslationKey, string> = {
   "chat.sidebar.title": "Characters",
   "chat.notFound": "Character not found or has been deleted",
   "chat.aiError": "Sorry, AI response failed. Please try again later.",
+  "chat.export": "Export Chat",
 
   // Onboarding
   "onboarding.title": "Create Your First AI Character",
