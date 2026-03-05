@@ -94,6 +94,16 @@ const zh = {
   "onboarding.selectHint": "选择一个预设角色，或自定义创建",
   "onboarding.custom": "自定义创建",
   "onboarding.customHint": "按你的想法打造独一无二的角色",
+
+  // Profile
+  "profile.edit": "编辑资料",
+  "profile.displayName": "昵称",
+  "profile.displayNamePlaceholder": "输入你的昵称",
+  "profile.avatar": "头像",
+  "profile.save": "保存",
+  "profile.saving": "保存中...",
+  "profile.cancel": "取消",
+  "profile.uploadFailed": "头像上传失败，请重试",
 } as const;
 
 export type TranslationKey = keyof typeof zh;

@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useRoles } from "../hooks/useRoles";
 import { useChat } from "../hooks/useChat";
+import { useAutoFollowup } from "../hooks/useAutoFollowup";
 import { useI18n } from "../hooks/useI18n";
 import { useAuth } from "../hooks/useAuth";
 import ChatSidebar from "../components/chat/ChatSidebar";
@@ -27,7 +28,10 @@ export default function ChatPage() {
     loading: chatLoading,
     sending,
     sendMessage,
+    sendFollowup,
   } = useChat(roleId!, currentRole);
+
+  useAutoFollowup({ messages, sending, sendFollowup });
 
   const handleClearHistory = async () => {
     if (!user || !roleId) return;

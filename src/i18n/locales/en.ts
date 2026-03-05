@@ -96,6 +96,16 @@ const en: Record<TranslationKey, string> = {
   "onboarding.selectHint": "Pick a preset character or create your own",
   "onboarding.custom": "Create Custom",
   "onboarding.customHint": "Build a unique character your way",
+
+  // Profile
+  "profile.edit": "Edit Profile",
+  "profile.displayName": "Display Name",
+  "profile.displayNamePlaceholder": "Enter your display name",
+  "profile.avatar": "Avatar",
+  "profile.save": "Save",
+  "profile.saving": "Saving...",
+  "profile.cancel": "Cancel",
+  "profile.uploadFailed": "Avatar upload failed, please try again",
 };
 
 export default en;
