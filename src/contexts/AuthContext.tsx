@@ -35,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await setDoc(doc(db, "users", credential.user.uid), {
       email,
       displayName: email.split("@")[0],
+      avatarUrl: null,
+      language: navigator.language.startsWith("zh") ? "zh" : "en",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

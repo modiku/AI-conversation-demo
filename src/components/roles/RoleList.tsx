@@ -1,4 +1,5 @@
 import type { Role } from "../../types";
+import { useI18n } from "../../hooks/useI18n";
 import RoleCard from "./RoleCard";
 
 interface RoleListProps {
@@ -14,14 +15,14 @@ export default function RoleList({
   onDelete,
   onClick,
 }: RoleListProps) {
+  const { t } = useI18n();
+
   if (roles.length === 0) {
     return (
       <div className="text-center py-20">
         <p className="text-5xl mb-4">🤖</p>
-        <p className="text-gray-500 text-lg mb-2">还没有创建任何角色</p>
-        <p className="text-gray-400 text-sm">
-          点击上方「新建角色」按钮开始创建你的第一个 AI 角色
-        </p>
+        <p className="text-gray-500 text-lg mb-2">{t("dashboard.empty")}</p>
+        <p className="text-gray-400 text-sm">{t("dashboard.emptyHint")}</p>
       </div>
     );
   }

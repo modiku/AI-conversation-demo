@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent, type FormEvent } from "react";
+import { useI18n } from "../../hooks/useI18n";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -6,6 +7,7 @@ interface ChatInputProps {
 }
 
 export default function ChatInput({ onSend, disabled }: ChatInputProps) {
+  const { t } = useI18n();
   const [content, setContent] = useState("");
 
   const handleSubmit = (e?: FormEvent) => {
@@ -32,7 +34,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+          placeholder={t("chat.placeholder")}
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 max-h-32"
@@ -47,7 +49,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           disabled={disabled || !content.trim()}
           className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex-shrink-0"
         >
-          发送
+          {t("chat.send")}
         </button>
       </div>
     </form>

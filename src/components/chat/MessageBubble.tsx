@@ -1,24 +1,29 @@
 import type { Message } from "../../types";
+import Avatar from "../common/Avatar";
 
 interface MessageBubbleProps {
   message: Message;
-  avatar?: string;
+  avatarUrl?: string | null;
+  avatarEmoji?: string;
 }
 
-export default function MessageBubble({ message, avatar }: MessageBubbleProps) {
+export default function MessageBubble({
+  message,
+  avatarUrl,
+  avatarEmoji,
+}: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
     <div
       className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
-      <div
-        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-          isUser ? "bg-blue-100" : "bg-gray-100"
-        }`}
-      >
-        {isUser ? "👤" : avatar || "🤖"}
-      </div>
+      <Avatar
+        avatarUrl={isUser ? null : avatarUrl}
+        emoji={isUser ? "👤" : avatarEmoji}
+        size="sm"
+        className={isUser ? "bg-blue-100" : ""}
+      />
       <div
         className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
           isUser

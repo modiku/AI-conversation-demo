@@ -13,7 +13,20 @@ import {
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useAuth } from "./useAuth";
-import type { Role } from "../types";
+import type { Role, Gender } from "../types";
+
+export interface CreateRoleData {
+  name: string;
+  description: string;
+  systemPrompt: string;
+  avatar: string;
+  gender: Gender;
+  personalityTraits: string[];
+  avatarUrl?: string | null;
+  illustrationUrl?: string | null;
+  isPreset?: boolean;
+  presetId?: string | null;
+}
 
 export function useRoles() {
   const { user } = useAuth();
@@ -30,9 +43,8 @@ export function useRoles() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() }) as Role
+        (d) => ({ id: d.id, ...d.data() }) as Role
       );
-      // Sort: roles with recent messages first, then by creation time
       items.sort((a, b) => {
         const aTime = a.lastMessageAt?.toMillis() ?? 0;
         const bTime = b.lastMessageAt?.toMillis() ?? 0;
@@ -46,15 +58,19 @@ export function useRoles() {
     return unsubscribe;
   }, [user]);
 
-  const createRole = async (data: {
-    name: string;
-    description: string;
-    systemPrompt: string;
-    avatar: string;
-  }) => {
+  const createRole = async (data: CreateRoleData) => {
     if (!user) return;
     await addDoc(collection(db, "users", user.uid, "roles"), {
-      ...data,
+      name: data.name,
+      description: data.description,
+      systemPrompt: data.systemPrompt,
+      avatar: data.avatar,
+      gender: data.gender,
+      personalityTraits: data.personalityTraits,
+      avatarUrl: data.avatarUrl ?? null,
+      illustrationUrl: data.illustrationUrl ?? null,
+      isPreset: data.isPreset ?? false,
+      presetId: data.presetId ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       lastMessageAt: null,
@@ -64,12 +80,7 @@ export function useRoles() {
 
   const updateRole = async (
     roleId: string,
-    data: Partial<{
-      name: string;
-      description: string;
-      systemPrompt: string;
-      avatar: string;
-    }>
+    data: Partial<CreateRoleData>
   ) => {
     if (!user) return;
     await updateDoc(doc(db, "users", user.uid, "roles", roleId), {
@@ -80,7 +91,6 @@ export function useRoles() {
 
   const deleteRole = async (roleId: string) => {
     if (!user) return;
-    // Delete all messages in the role first
     const messagesRef = collection(
       db,
       "users",
@@ -94,7 +104,6 @@ export function useRoles() {
       deleteDoc(d.ref)
     );
     await Promise.all(deletePromises);
-    // Then delete the role
     await deleteDoc(doc(db, "users", user.uid, "roles", roleId));
   };
 

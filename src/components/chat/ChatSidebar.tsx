@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { Role } from "../../types";
+import { useI18n } from "../../hooks/useI18n";
+import Avatar from "../common/Avatar";
 
 interface ChatSidebarProps {
   roles: Role[];
@@ -11,12 +13,13 @@ export default function ChatSidebar({
   currentRoleId,
 }: ChatSidebarProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-4 border-b border-gray-100">
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-          角色列表
+          {t("chat.sidebar.title")}
         </h3>
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -30,7 +33,11 @@ export default function ChatSidebar({
                 : ""
             }`}
           >
-            <span className="text-lg">{role.avatar || "🤖"}</span>
+            <Avatar
+              avatarUrl={role.avatarUrl}
+              emoji={role.avatar}
+              size="sm"
+            />
             <div className="flex-1 min-w-0">
               <p
                 className={`text-sm font-medium truncate ${
@@ -42,7 +49,7 @@ export default function ChatSidebar({
                 {role.name}
               </p>
               <p className="text-xs text-gray-400 truncate">
-                {role.messageCount} 条消息
+                {role.messageCount} {t("role.messages")}
               </p>
             </div>
           </button>

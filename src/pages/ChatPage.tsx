@@ -1,9 +1,12 @@
 import { useParams } from "react-router-dom";
 import { useRoles } from "../hooks/useRoles";
 import { useChat } from "../hooks/useChat";
+import { useI18n } from "../hooks/useI18n";
+import { useAuth } from "../hooks/useAuth";
 import ChatSidebar from "../components/chat/ChatSidebar";
 import MessageList from "../components/chat/MessageList";
 import ChatInput from "../components/chat/ChatInput";
+import Avatar from "../components/common/Avatar";
 import {
   collection,
   getDocs,
@@ -12,21 +15,23 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
-import { useAuth } from "../hooks/useAuth";
 
 export default function ChatPage() {
   const { roleId } = useParams<{ roleId: string }>();
   const { user } = useAuth();
+  const { t } = useI18n();
   const { roles, loading: rolesLoading } = useRoles();
   const currentRole = roles.find((r) => r.id === roleId) ?? null;
-  const { messages, loading: chatLoading, sending, sendMessage } = useChat(
-    roleId!,
-    currentRole
-  );
+  const {
+    messages,
+    loading: chatLoading,
+    sending,
+    sendMessage,
+  } = useChat(roleId!, currentRole);
 
   const handleClearHistory = async () => {
     if (!user || !roleId) return;
-    if (!window.confirm("确定要清空当前角色的所有对话记录吗？")) return;
+    if (!window.confirm(t("chat.clearConfirm"))) return;
 
     const messagesRef = collection(
       db,
@@ -54,7 +59,7 @@ export default function ChatPage() {
   if (!currentRole) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-gray-500">角色不存在或已被删除</p>
+        <p className="text-gray-500">{t("chat.notFound")}</p>
       </div>
     );
   }
@@ -67,7 +72,11 @@ export default function ChatPage() {
         {/* Chat header */}
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-xl">{currentRole.avatar || "🤖"}</span>
+            <Avatar
+              avatarUrl={currentRole.avatarUrl}
+              emoji={currentRole.avatar}
+              size="md"
+            />
             <div>
               <h2 className="font-semibold text-gray-900">
                 {currentRole.name}
@@ -81,7 +90,7 @@ export default function ChatPage() {
             onClick={handleClearHistory}
             className="text-xs text-gray-400 hover:text-red-500 transition"
           >
-            清空对话
+            {t("chat.clear")}
           </button>
         </div>
 
@@ -89,7 +98,8 @@ export default function ChatPage() {
         <MessageList
           messages={messages}
           sending={sending}
-          avatar={currentRole.avatar}
+          avatarUrl={currentRole.avatarUrl}
+          avatarEmoji={currentRole.avatar}
         />
 
         {/* Input */}

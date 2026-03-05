@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { I18nProvider } from "./contexts/I18nContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import Header from "./components/layout/Header";
 import LoginPage from "./pages/LoginPage";
@@ -20,6 +21,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <I18nProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -45,6 +47,7 @@ function App() {
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </I18nProvider>
       </AuthProvider>
     </BrowserRouter>
   );

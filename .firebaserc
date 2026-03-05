@@ -1,6 +1,7 @@
 {
   "projects": {
-    "staging": "ai-convers-demo"
+    "staging": "ai-convers-demo",
+    "default": "ai-convers-demo"
   },
   "targets": {},
   "etags": {}

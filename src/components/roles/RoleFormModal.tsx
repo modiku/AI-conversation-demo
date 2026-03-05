@@ -1,52 +1,48 @@
 import { useState, useEffect, type FormEvent } from "react";
-import type { Role } from "../../types";
+import { useI18n } from "../../hooks/useI18n";
+import { useAuth } from "../../hooks/useAuth";
+import { useImageUpload } from "../../hooks/useImageUpload";
+import { personalityTraits } from "../../data/personalityTraits";
+import ImageUploader from "../common/ImageUploader";
+import type { Role, Gender } from "../../types";
+import type { CreateRoleData } from "../../hooks/useRoles";
 
-const PRESET_TEMPLATES = [
-  {
-    name: "英语老师",
-    avatar: "👩‍🏫",
-    description: "帮助你练习英语口语和语法",
-    systemPrompt:
-      "你是一位耐心的英语老师。用户可能使用中文或英文与你交流。如果用户使用中文提问，请用英文回答并附上中文翻译。纠正用户的语法错误，并给出改进建议。",
-  },
-  {
-    name: "代码助手",
-    avatar: "💻",
-    description: "帮你写代码、调 bug、讲解技术原理",
-    systemPrompt:
-      "你是一位经验丰富的全栈开发工程师。请用简洁清晰的方式回答编程问题，给出代码示例时使用合适的语言。如果用户的问题不够明确，请先追问具体需求。",
-  },
-  {
-    name: "翻译官",
-    avatar: "🌐",
-    description: "中英互译，保持原文风格和语气",
-    systemPrompt:
-      "你是一位专业翻译。当用户输入中文时，翻译为英文；当用户输入英文时，翻译为中文。保持原文的语气和风格，必要时提供多种翻译选项。",
-  },
-];
+export interface RoleFormDefaultData {
+  gender?: Gender;
+  personalityTraits?: string[];
+}
 
 interface RoleFormModalProps {
   isOpen: boolean;
   editingRole: Role | null;
+  defaultData?: RoleFormDefaultData | null;
   onClose: () => void;
-  onSubmit: (data: {
-    name: string;
-    description: string;
-    systemPrompt: string;
-    avatar: string;
-  }) => Promise<void>;
+  onSubmit: (data: CreateRoleData) => Promise<void>;
 }
 
 export default function RoleFormModal({
   isOpen,
   editingRole,
+  defaultData,
   onClose,
   onSubmit,
 }: RoleFormModalProps) {
+  const { t, locale } = useI18n();
+  const { user } = useAuth();
+  const { uploadImage, uploading: avatarUploading } = useImageUpload();
+  const {
+    uploadImage: uploadIllustration,
+    uploading: illustrationUploading,
+  } = useImageUpload();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [avatar, setAvatar] = useState("🤖");
+  const [gender, setGender] = useState<Gender>("female");
+  const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [illustrationUrl, setIllustrationUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -55,65 +51,95 @@ export default function RoleFormModal({
       setDescription(editingRole.description);
       setSystemPrompt(editingRole.systemPrompt);
       setAvatar(editingRole.avatar || "🤖");
+      setGender(editingRole.gender ?? "female");
+      setSelectedTraits(editingRole.personalityTraits ?? []);
+      setAvatarUrl(editingRole.avatarUrl ?? null);
+      setIllustrationUrl(editingRole.illustrationUrl ?? null);
     } else {
       setName("");
       setDescription("");
       setSystemPrompt("");
       setAvatar("🤖");
+      setGender(defaultData?.gender ?? "female");
+      setSelectedTraits(defaultData?.personalityTraits ?? []);
+      setAvatarUrl(null);
+      setIllustrationUrl(null);
     }
-  }, [editingRole, isOpen]);
+  }, [editingRole, isOpen, defaultData]);
+
+  const handleToggleTrait = (traitId: string) => {
+    setSelectedTraits((prev) =>
+      prev.includes(traitId)
+        ? prev.filter((t) => t !== traitId)
+        : prev.length < 5
+          ? [...prev, traitId]
+          : prev
+    );
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) return;
+    try {
+      const fileName = `avatar_${Date.now()}_${file.name}`;
+      const url = await uploadImage(file, `images/${user.uid}/${fileName}`);
+      setAvatarUrl(url);
+    } catch {
+      alert(t("roleForm.uploadFailed"));
+    }
+  };
+
+  const handleIllustrationUpload = async (file: File) => {
+    if (!user) return;
+    try {
+      const fileName = `illust_${Date.now()}_${file.name}`;
+      const url = await uploadIllustration(
+        file,
+        `images/${user.uid}/${fileName}`
+      );
+      setIllustrationUrl(url);
+    } catch {
+      alert(t("roleForm.uploadFailed"));
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit({ name, description, systemPrompt, avatar });
+      await onSubmit({
+        name,
+        description,
+        systemPrompt,
+        avatar,
+        gender,
+        personalityTraits: selectedTraits,
+        avatarUrl,
+        illustrationUrl,
+      });
       onClose();
     } finally {
       setLoading(false);
     }
   };
 
-  const applyTemplate = (template: (typeof PRESET_TEMPLATES)[number]) => {
-    setName(template.name);
-    setDescription(template.description);
-    setSystemPrompt(template.systemPrompt);
-    setAvatar(template.avatar);
-  };
-
   if (!isOpen) return null;
+
+  const isUploading = avatarUploading || illustrationUploading;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">
-            {editingRole ? "编辑角色" : "新建角色"}
+            {editingRole ? t("roleForm.editTitle") : t("roleForm.createTitle")}
           </h2>
 
-          {!editingRole && (
-            <div className="mb-5">
-              <p className="text-sm text-gray-500 mb-2">快速使用模板:</p>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_TEMPLATES.map((t) => (
-                  <button
-                    key={t.name}
-                    type="button"
-                    onClick={() => applyTemplate(t)}
-                    className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 rounded-full transition"
-                  >
-                    {t.avatar} {t.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Avatar emoji + Name */}
             <div className="flex gap-3">
               <div className="flex-shrink-0">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  头像
+                  {t("roleForm.avatar")}
                 </label>
                 <input
                   type="text"
@@ -124,7 +150,7 @@ export default function RoleFormModal({
               </div>
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  角色名称 *
+                  {t("roleForm.name")} *
                 </label>
                 <input
                   type="text"
@@ -132,27 +158,109 @@ export default function RoleFormModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="如: 英语老师"
+                  placeholder={t("roleForm.namePlaceholder")}
                 />
               </div>
             </div>
 
+            {/* Image uploads: Avatar + Illustration */}
+            <div className="flex gap-4">
+              <ImageUploader
+                currentUrl={avatarUrl}
+                onUpload={handleAvatarUpload}
+                uploading={avatarUploading}
+                label={t("roleForm.avatarUpload")}
+                aspectRatio="square"
+              />
+              <ImageUploader
+                currentUrl={illustrationUrl}
+                onUpload={handleIllustrationUpload}
+                uploading={illustrationUploading}
+                label={t("roleForm.illustrationUpload")}
+                aspectRatio="portrait"
+              />
+            </div>
+
+            {/* Gender */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                角色描述
+                {t("roleForm.gender")}
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGender("female")}
+                  className={`px-4 py-2 rounded-lg border text-sm transition ${
+                    gender === "female"
+                      ? "border-pink-500 bg-pink-50 text-pink-700"
+                      : "border-gray-200 text-gray-600 hover:border-pink-300"
+                  }`}
+                >
+                  👩 {t("roleForm.female")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGender("male")}
+                  className={`px-4 py-2 rounded-lg border text-sm transition ${
+                    gender === "male"
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-200 text-gray-600 hover:border-blue-300"
+                  }`}
+                >
+                  👨 {t("roleForm.male")}
+                </button>
+              </div>
+            </div>
+
+            {/* Traits */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("roleForm.traits")}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {personalityTraits.map((trait) => {
+                  const isSelected = selectedTraits.includes(trait.id);
+                  const isDisabled = !isSelected && selectedTraits.length >= 5;
+                  return (
+                    <button
+                      key={trait.id}
+                      type="button"
+                      onClick={() => !isDisabled && handleToggleTrait(trait.id)}
+                      disabled={isDisabled}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                        isSelected
+                          ? "border-purple-500 bg-purple-50 text-purple-700"
+                          : isDisabled
+                            ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                            : "border-gray-200 text-gray-600 hover:border-purple-300"
+                      }`}
+                    >
+                      {trait.emoji}{" "}
+                      {locale === "zh" ? trait.zh : trait.en}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("roleForm.description")}
               </label>
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="简短描述这个角色的功能"
+                placeholder={t("roleForm.descriptionPlaceholder")}
               />
             </div>
 
+            {/* System Prompt */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                System Prompt *
+                {t("roleForm.systemPrompt")} *
               </label>
               <textarea
                 required
@@ -160,27 +268,32 @@ export default function RoleFormModal({
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y"
-                placeholder="定义 AI 的角色、行为和回答风格..."
+                placeholder={t("roleForm.systemPromptPlaceholder")}
               />
               <p className="text-xs text-gray-400 mt-1">
-                这段内容会作为 System Prompt 发送给 AI，用于定义它的角色和行为
+                {t("roleForm.systemPromptHint")}
               </p>
             </div>
 
+            {/* Actions */}
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition"
               >
-                取消
+                {t("roleForm.cancel")}
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isUploading}
                 className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
               >
-                {loading ? "保存中..." : editingRole ? "保存修改" : "创建角色"}
+                {loading
+                  ? t("roleForm.saving")
+                  : editingRole
+                    ? t("roleForm.save")
+                    : t("roleForm.create")}
               </button>
             </div>
           </form>

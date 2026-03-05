@@ -15,6 +15,7 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../config/firebase";
 import { useAuth } from "./useAuth";
+import { useI18n } from "./useI18n";
 import type { Message, Role } from "../types";
 
 const chatFn = httpsCallable<
@@ -24,6 +25,7 @@ const chatFn = httpsCallable<
 
 export function useChat(roleId: string, role: Role | null) {
   const { user } = useAuth();
+  const { locale, t } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -38,7 +40,7 @@ export function useChat(roleId: string, role: Role | null) {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() }) as Message
+        (d) => ({ id: d.id, ...d.data() }) as Message
       );
       setMessages(items);
       setLoading(false);
@@ -70,7 +72,7 @@ export function useChat(roleId: string, role: Role | null) {
           createdAt: serverTimestamp(),
         });
 
-        // 2. Build context: system prompt + recent messages
+        // 2. Build context: system prompt + language instruction + recent messages
         const recentQuery = query(
           messagesRef,
           orderBy("createdAt", "desc"),
@@ -85,8 +87,14 @@ export function useChat(roleId: string, role: Role | null) {
             content: m.content as string,
           }));
 
+        // Append language instruction to system prompt
+        const langInstruction =
+          locale === "zh"
+            ? "\n\n重要：你必须使用中文回复。"
+            : "\n\nIMPORTANT: You MUST respond in English only.";
+
         const contextMessages = [
-          { role: "system", content: role.systemPrompt },
+          { role: "system", content: role.systemPrompt + langInstruction },
           ...recentMessages,
         ];
 
@@ -107,10 +115,9 @@ export function useChat(roleId: string, role: Role | null) {
         });
       } catch (error) {
         console.error("Send message error:", error);
-        // Save error message for user feedback
         await addDoc(messagesRef, {
           role: "assistant",
-          content: "抱歉，AI 响应失败，请稍后重试。",
+          content: t("chat.aiError"),
           createdAt: serverTimestamp(),
         });
         await updateDoc(roleRef, {
@@ -121,7 +128,7 @@ export function useChat(roleId: string, role: Role | null) {
         setSending(false);
       }
     },
-    [user, role, roleId, sending]
+    [user, role, roleId, sending, locale, t]
   );
 
   return { messages, loading, sending, sendMessage };
